@@ -1,0 +1,10 @@
+# Ignore everything inside "in" and "out"
+in/*
+out/*
+
+# Except for the directories themselves and any .gitkeep files inside
+!in/.gitkeep
+!out/.gitkeep
+
+# Ignore the log file
+fsbext.log
