@@ -11,8 +11,14 @@ This script allows you to extract sound banks from the video game Sky: Children 
 1. Extract a Sky APK and locate the sound banks within (usually `/path/to/apk/assets/Data/Audio/Fmod/fmodandroid/`)
 2. Paste the sound banks you wish to extract into the script's `in` folder. 
 3. Ensure that `vgmstream-cli` is installed and accessible from the command line.
-4. Optionally, provide the path to the `vgmstream-cli` executable by running the script with the `--vgmstream-path` argument followed by the path to the executable.
-5. Run the script and wait for it to finish.
+4. Run the script with optional command-line arguments:
+
+  - `-i` or `--input-dir` to specify the path to the input directory (default is `in`)
+  - `-o` or `--output-dir` to specify the path to the output directory (default is `out`)
+  - `--vgmstream-path` to provide the path to the `vgmstream-cli` executable (default is `vgmstream-win64/vgmstream-cli.exe`)
+  - `-v` or `--version` to print the script version.
+
+5. Wait for the script to finish.
 6. The extracted audio files will be located in the `out` folder.
 
 ## Configuration

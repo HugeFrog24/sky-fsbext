@@ -8,3 +8,6 @@ out/*
 
 # Ignore the log file
 fsbext.log
+
+# Local IDE settings & config
+.idea/

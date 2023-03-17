@@ -14,9 +14,23 @@ logging.basicConfig(
 )
 
 # Define command-line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument("vgmstream_path", nargs='?', default='vgmstream-win64/vgmstream-cli.exe', help="Path to vgmstream-cli executable")
+parser = argparse.ArgumentParser(
+    description='Extracts audio data from sound banks in the assets folder of the '
+                'video game Sky: Children of the Light, and saves them as .wav files using the vgmstream audio decoder.'
+                'The extracted data can be used for game-related purposes.'
+)
+parser.add_argument(
+    "vgmstream_path", nargs='?', default='vgmstream-win64/vgmstream-cli.exe', help="Path to vgmstream-cli executable."
+)
+parser.add_argument("-i", "--input-dir", default="in", help="Path to the input directory.")
+parser.add_argument("-o", "--output-dir", default="out", help="Path to the output directory.")
+parser.add_argument("-v", "--version", action="store_true", help="Prints script version.")
 args = parser.parse_args()
+
+logging.info(f"SKY-FSBEXT version: {__version__} by {__author__}")
+if args.version:
+    print(f"SKY-FSBEXT version: {__version__} by {__author__}")
+    exit()
 
 # Define the minimum required disk space (in bytes)
 MIN_DISK_SPACE = 7 * 1024 * 1024 * 1024
@@ -30,19 +44,19 @@ if free_space < MIN_DISK_SPACE:
     )
 
 # Create the directory structure
-os.makedirs("out/Music", exist_ok=True)
-os.makedirs("out/SFX", exist_ok=True)
-os.makedirs("out/Other", exist_ok=True)
+os.makedirs(os.path.join(args.output_dir, "Music"), exist_ok=True)
+os.makedirs(os.path.join(args.output_dir, "SFX"), exist_ok=True)
+os.makedirs(os.path.join(args.output_dir, "Other"), exist_ok=True)
 logging.info("Created directory structure")
 
 # Check if the "in" directory exists and rebuild it if necessary
-if not os.path.isdir("in"):
-    os.makedirs("in")
+if not os.path.isdir(args.input_dir):
+    os.makedirs(args.input_dir)
     logging.warning("Input directory not found - rebuilding")
     print("Input directory not found - rebuilding")
 
 # Search for .bank files in the in directory
-bank_files = [f for f in os.listdir("in") if f.endswith(".bank")]
+bank_files = [f for f in os.listdir(args.input_dir) if f.endswith(".bank")]
 if not bank_files:
     logging.warning("No sound banks found in input directory")
     print("No sound banks found in input directory")
@@ -60,35 +74,35 @@ else:
     for bank_file in bank_files:
         # Determine the output directory
         if bank_file.startswith("Music_"):
-            out_dir = os.path.join("out", "Music", bank_file[:-5])
+            bank_dir = os.path.join(args.output_dir, "Music", bank_file[:-5])
         elif bank_file.startswith("SFX_"):
-            out_dir = os.path.join("out", "SFX")
+            bank_dir = os.path.join(args.output_dir, "SFX")
         else:
-            out_dir = os.path.join("out", "Other", bank_file[:-5])
+            bank_dir = os.path.join(args.output_dir, "Other", bank_file[:-5])
 
         # Create the output directory if it doesn't exist
-        os.makedirs(out_dir, exist_ok=True)
-        logging.info(f"Created output directory: {out_dir}")
+        os.makedirs(bank_dir, exist_ok=True)
+        logging.info(f"Created output directory: {bank_dir}")
 
         # Extract the bank file to WAV files
         try:
             subprocess.run(
                 [
                     args.vgmstream_path, os.path.join("in", bank_file),
-                    "-o", os.path.join(out_dir, "?n.wav"), "-S", "0"
+                    "-o", os.path.join(bank_dir, "?n.wav"), "-S", "0"
                 ], check=True
             )
         except subprocess.CalledProcessError:
             logging.warning(f"Failed to extract {bank_file}")
             print(f"Failed to extract {bank_file}")
         else:
-            logging.info(f"Extracted {bank_file} to {out_dir}")
+            logging.info(f"Extracted {bank_file} to {bank_dir}")
             extracted_files += 1
 
             # Check if the output directory is empty and remove it if it is
-            if not os.listdir(out_dir):
-                os.rmdir(out_dir)
-                logging.info(f"Removed empty directory: {out_dir}")
+            if not os.listdir(bank_dir):
+                os.rmdir(bank_dir)
+                logging.info(f"Removed empty directory: {bank_dir}")
 
     if extracted_files > 0:
         logging.info(f"Successfully extracted {extracted_files} bank file(s)")
