@@ -1,4 +1,5 @@
 import argparse
+import platform
 import os
 import shutil
 import subprocess
@@ -20,6 +21,7 @@ LOGGER_PADDING = '=' * 10
 
 def main(args):
     logging.info(f"{LOGGER_PADDING} SKY-FSBEXT version: {__version__} by {__author__} {LOGGER_PADDING}")
+    logging.info(f"Operating system: {platform.system()} {platform.release()}")
     if args.version:
         print(f"{LOGGER_PADDING} SKY-FSBEXT version: {__version__} by {__author__} {LOGGER_PADDING}")
         exit()
@@ -31,6 +33,10 @@ def main(args):
             f"Less than {MIN_DISK_SPACE / (1024 * 1024 * 1024):.2f} GB of disk space available "
             f"({free_space / (1024 * 1024 * 1024):.2f} GB)"
         )
+
+    # Log input and output directories
+    logging.info(f"Input directory: {args.input_dir}")
+    logging.info(f"Output directory: {args.output_dir}")
 
     # Create the directory structure
     os.makedirs(os.path.join(args.output_dir, "Music"), exist_ok=True)
