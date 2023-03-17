@@ -1,3 +1,4 @@
+import argparse
 import os
 import shutil
 import subprocess
@@ -12,13 +13,21 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S'
 )
 
+# Define command-line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("vgmstream_path", nargs='?', default='vgmstream-win64/vgmstream-cli.exe', help="Path to vgmstream-cli executable")
+args = parser.parse_args()
+
 # Define the minimum required disk space (in bytes)
 MIN_DISK_SPACE = 7 * 1024 * 1024 * 1024
 
 # Check available disk space
 free_space = shutil.disk_usage(".").free
 if free_space < MIN_DISK_SPACE:
-    logging.warning(f"Less than {MIN_DISK_SPACE / (1024 * 1024 * 1024):.2f} GB of disk space available ({free_space / (1024 * 1024 * 1024):.2f} GB)")
+    logging.warning(
+        f"Less than {MIN_DISK_SPACE / (1024 * 1024 * 1024):.2f} GB of disk space available "
+        f"({free_space / (1024 * 1024 * 1024):.2f} GB)"
+    )
 
 # Create the directory structure
 os.makedirs("out/Music", exist_ok=True)
@@ -41,7 +50,10 @@ else:
     logging.info(f"Found {len(bank_files)} sound bank(s) in input directory")
 
     # Check if the vgmstream executable is present and get its version number
-    vgmstream_path = os.path.join("vgmstream-win64", "vgmstream-cli.exe")
+    if not os.path.isfile(args.vgmstream_path):
+        logging.error("vgmstream-cli executable not found")
+        print("vgmstream-cli executable not found")
+        exit(1)
 
     # Extract and move the files
     extracted_files = 0
@@ -62,7 +74,7 @@ else:
         try:
             subprocess.run(
                 [
-                    vgmstream_path, os.path.join("in", bank_file),
+                    args.vgmstream_path, os.path.join("in", bank_file),
                     "-o", os.path.join(out_dir, "?n.wav"), "-S", "0"
                 ], check=True
             )
