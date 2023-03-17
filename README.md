@@ -1,6 +1,10 @@
 # Sky: CotL Fmod Extractor
 
-This script allows you to extract sound banks from the video game Sky: Children of the Light's assets folder.
+This script extracts audio data from sound banks in the assets folder of the video game Sky: Children of the Light and 
+saves them as .wav files using the vgmstream audio decoder.
+
+The extracted audio files can be used to listen to the game's audio outside of the game environment, 
+for example with a regular audio player or for other non-commercial purposes.
 
 ## Prerequisites
 - Python 3
@@ -16,6 +20,7 @@ This script allows you to extract sound banks from the video game Sky: Children 
   - `-i` or `--input-dir` to specify the path to the input directory (default is `in`)
   - `-o` or `--output-dir` to specify the path to the output directory (default is `out`)
   - `--vgmstream-path` to provide the path to the `vgmstream-cli` executable (default is `vgmstream-win64/vgmstream-cli.exe`)
+  - `-V` or `--verbose` to enable verbose output.
   - `-v` or `--version` to print the script version.
 
 5. Wait for the script to finish.

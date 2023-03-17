@@ -121,16 +121,16 @@ def main(args):
         logging.info(f"{LOGGER_PADDING} Done, program exiting. {LOGGER_PADDING}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Define command-line arguments
     parser = argparse.ArgumentParser(
-        description='Extracts audio data from sound banks in the assets folder of the '
-                    'video game Sky: Children of the Light, and saves them as .wav files '
-                    'using the vgmstream audio decoder.'
-                    'The extracted data can be used for game-related purposes.'
+        description="Extracts audio data from sound banks in the assets folder of the video game "
+                    "Sky: Children of the Light, and saves them as .wav files using the vgmstream audio decoder. "
+                    "The extracted data can be used for game-related purposes, such as listening to the game audio "
+                    "outside of the game environment or for other non-commercial purposes."
     )
     parser.add_argument(
-        "vgmstream_path", nargs='?', default='vgmstream-win64/vgmstream-cli.exe',
+        "vgmstream_path", nargs="?", default="vgmstream-win64/vgmstream-cli.exe",
         help="Path to vgmstream-cli executable."
     )
     parser.add_argument("-i", "--input-dir", default="in", help="Path to the input directory.")
