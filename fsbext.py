@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import logging
 
@@ -10,6 +11,15 @@ logging.basicConfig(
     filename='fsbext.log', filemode='w', level=logging.DEBUG,
     format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S'
 )
+
+# Define the minimum required disk space (in bytes)
+MIN_DISK_SPACE = 7 * 1024 * 1024 * 1024
+
+# Check available disk space
+free_space = shutil.disk_usage(".").free
+if free_space < MIN_DISK_SPACE:
+    logging.warning(f"Less than {MIN_DISK_SPACE / (1024 * 1024 * 1024):.2f} GB of disk space available ({free_space / (1024 * 1024 * 1024):.2f} GB)")
+
 # Create the directory structure
 os.makedirs("out/Music", exist_ok=True)
 os.makedirs("out/SFX", exist_ok=True)
