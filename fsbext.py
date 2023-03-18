@@ -16,6 +16,11 @@ logging.basicConfig(
     filename='fsbext.log', filemode='w', level=logging.DEBUG,
     format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S'
 )
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)
+console_formatter = logging.Formatter('%(message)s')
+console_handler.setFormatter(console_formatter)
+logging.getLogger().addHandler(console_handler)
 LOGGER_PADDING = '=' * 10
 
 
@@ -49,20 +54,17 @@ def main(args):
     if not os.path.isdir(args.input_dir):
         os.makedirs(args.input_dir)
         logging.warning("Input directory not found - rebuilding")
-        print("Input directory not found - rebuilding")
 
     # Search for .bank files in the in directory
     bank_files = [f for f in os.listdir(args.input_dir) if f.endswith(".bank")]
     if not bank_files:
         logging.warning("No sound banks found in input directory")
-        print("No sound banks found in input directory")
     else:
         logging.info(f"Found {len(bank_files)} sound bank(s) in input directory")
 
         # Check if the vgmstream executable is present and get its version number
         if not os.path.isfile(args.vgmstream_path):
             logging.error("vgmstream-cli executable not found")
-            print("vgmstream-cli executable not found")
             exit(1)
 
         # Extract and move the files
@@ -92,11 +94,7 @@ def main(args):
                 logging.warning(f"Failed to extract {bank_file}")
                 print(f"Failed to extract {bank_file}")
             else:
-                if args.verbose:
-                    print(f"Extracted {bank_file} to {bank_dir}")
-                else:
-                    logging.info(f"Extracted {bank_file} to {bank_dir}")
-
+                logging.info(f"Extracted {bank_file} to {bank_dir}")
                 extracted_files += 1
 
                 # Check if the output directory is empty and remove it if it is
@@ -106,10 +104,8 @@ def main(args):
 
         if extracted_files > 0:
             logging.info(f"Successfully extracted {extracted_files} bank file(s)")
-            print(f"Successfully extracted {extracted_files} bank file(s)")
         else:
             logging.warning("No sound banks were extracted")
-            print("No sound banks were extracted")
 
         # Remove empty directories
         for root, dirs, files in os.walk("out", topdown=False):
