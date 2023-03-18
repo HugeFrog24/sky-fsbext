@@ -20,10 +20,11 @@ LOGGER_PADDING = '=' * 10
 
 
 def main(args):
-    logging.info(f"{LOGGER_PADDING} SKY-FSBEXT version: {__version__} by {__author__} {LOGGER_PADDING}")
+    version_str = f"SKY-FSBEXT version: {__version__} by {__author__}"
+    logging.info(f"{LOGGER_PADDING} {version_str} {LOGGER_PADDING}")
     logging.info(f"Operating system: {platform.system()} {platform.release()}")
     if args.version:
-        print(f"{LOGGER_PADDING} SKY-FSBEXT version: {__version__} by {__author__} {LOGGER_PADDING}")
+        print(version_str)
         exit()
 
     # Check available disk space
@@ -118,8 +119,6 @@ def main(args):
                     os.rmdir(dir_path)
                     logging.info(f"Removed empty directory: {dir_path}")
 
-        logging.info(f"{LOGGER_PADDING} Done, program exiting. {LOGGER_PADDING}")
-
 
 if __name__ == "__main__":
     # Define command-line arguments
@@ -139,6 +138,7 @@ if __name__ == "__main__":
     parser.add_argument("-V", "--verbose", action="store_true", help="Enable verbose output.")
     parsed_args = parser.parse_args()
     main(args=parsed_args)
+    logging.info(f"{LOGGER_PADDING} Done, program exiting. {LOGGER_PADDING}")
 else:
     print("This script is intended to be run from the command line. "
           "Please run 'python fsbext.py --help' for usage information.")
