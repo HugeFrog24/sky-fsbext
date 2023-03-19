@@ -33,5 +33,20 @@ for example with a regular audio player or for other non-commercial purposes.
   - SFX
   - Other
 
+## Screenshots
+
+<table>
+  <tr>
+    <td valign="top" style="text-align: center;">
+      <img src="assets/screenshots/scr-cap-terminal.png" alt="Demo" /><br />
+      Demo
+    </td>
+    <td valign="top" style="text-align: center;">
+      <img src="assets/screenshots/scr-cap-audio-wave-spectrum.png" alt="Extracted Audio Waveform and Spectrum" /><br />
+      Extracted Audio Waveform and Spectrum
+  </td>
+  </tr>
+</table>
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

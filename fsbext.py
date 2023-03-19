@@ -12,23 +12,34 @@ __version__ = "1.0.1"
 # Define the minimum required disk space (in bytes)
 MIN_DISK_SPACE = 7 * 1024 * 1024 * 1024
 
-# Set up logging
-logging.basicConfig(
-    filename='fsbext.log', filemode='w', level=logging.DEBUG,
-    format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S'
-)
+class ConsoleFilter(logging.Filter):
+    def filter(self, record):
+        return not getattr(record, "log_to_file_only", False)
+
+# Set up root logger
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.DEBUG)
+
+# Add file handler to root logger
+file_handler = logging.FileHandler("fsbext.log", mode="w")
+file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S'))
+root_logger.addHandler(file_handler)
+
+# Add console handler to root logger
 console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setLevel(logging.INFO)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
-logging.getLogger().addHandler(console_handler)
+console_handler.addFilter(ConsoleFilter())  # Add the custom filter to the console handler
+root_logger.addHandler(console_handler)
+
 LOGGER_PADDING = '=' * 10
 
 
 def main(args):
     version_str = f"SKY-FSBEXT version: {__version__} by {__author__}"
-    logging.info(f"{LOGGER_PADDING} {version_str} {LOGGER_PADDING}")
-    logging.info(f"Operating system: {platform.system()} {platform.release()}")
+    root_logger.info(f"{LOGGER_PADDING} {version_str} {LOGGER_PADDING}")
+    root_logger.info(f"Operating system: {platform.system()} {platform.release()}")
     if args.version:
         print(version_str)
         exit()
@@ -36,36 +47,36 @@ def main(args):
     # Check available disk space
     free_space = shutil.disk_usage(".").free
     if free_space < MIN_DISK_SPACE:
-        logging.warning(
+        root_logger.warning(
             f"Less than {MIN_DISK_SPACE / (1024 * 1024 * 1024):.2f} GB of disk space available "
             f"({free_space / (1024 * 1024 * 1024):.2f} GB)"
         )
 
     # Log input and output directories
-    logging.info(f"Input directory: {args.input_dir}")
-    logging.info(f"Output directory: {args.output_dir}")
+    root_logger.info(f"Input directory: {args.input_dir}")
+    root_logger.info(f"Output directory: {args.output_dir}")
 
     # Create the directory structure
     os.makedirs(os.path.join(args.output_dir, "Music"), exist_ok=True)
     os.makedirs(os.path.join(args.output_dir, "SFX"), exist_ok=True)
     os.makedirs(os.path.join(args.output_dir, "Other"), exist_ok=True)
-    logging.info("Created directory structure")
+    root_logger.info("Created directory structure")
 
     # Check if the "in" directory exists and rebuild it if necessary
     if not os.path.isdir(args.input_dir):
         os.makedirs(args.input_dir)
-        logging.warning("Input directory not found - rebuilding")
+        root_logger.warning("Input directory not found - rebuilding")
 
     # Search for .bank files in the in directory
     bank_files = [f for f in os.listdir(args.input_dir) if f.endswith(".bank")]
     if not bank_files:
-        logging.warning("No sound banks found in input directory")
+        root_logger.warning("No sound banks found in input directory")
     else:
-        logging.info(f"Found {len(bank_files)} sound bank(s) in input directory")
+        root_logger.info(f"Found {len(bank_files)} sound bank(s) in input directory")
 
         # Check if the vgmstream executable is present and get its version number
         if not os.path.isfile(args.vgmstream_path):
-            logging.error("vgmstream-cli executable not found")
+            root_logger.error("vgmstream-cli executable not found")
             exit(1)
 
         # Extract and move the files
@@ -81,7 +92,7 @@ def main(args):
 
             # Create the output directory if it doesn't exist
             os.makedirs(bank_dir, exist_ok=True)
-            logging.info(f"Created output directory: {bank_dir}")
+            root_logger.info(f"Created output directory: {bank_dir}", extra={"log_to_file_only": True})
 
             # Extract the bank file to WAV files
             status = None
@@ -100,22 +111,21 @@ def main(args):
                 status = True
                 extracted_files += 1
             finally:
-                logging.info(
+                root_logger.info(
                     f"Processing {bank_file}: {'OK!' if status else 'ERR!'}"
-                    f"{' - saved to ' + bank_dir if status else ''}"
                 )
                 if not status:
-                    logging.error(f"An error occurred while extracting {bank_file}: {err_reason}")
+                    root_logger.error(f"An error occurred while extracting {bank_file}: {err_reason}", extra={"log_to_file_only": True})
 
                 # Check if the output directory is empty and remove it if it is
                 if not os.listdir(bank_dir):
                     os.rmdir(bank_dir)
-                    logging.info(f"Removed empty directory: {bank_dir}")
+                    root_logger.info(f"Removed empty directory: {bank_dir}", extra={"log_to_file_only": True})
 
         if extracted_files > 0:
-            logging.info(f"Successfully extracted {extracted_files} bank file(s)")
+            root_logger.info(f"Successfully extracted {extracted_files} bank file(s)")
         else:
-            logging.warning("No sound banks were extracted")
+            root_logger.warning("No sound banks were extracted")
 
         # Remove empty directories
         for root, dirs, files in os.walk("out", topdown=False):
@@ -123,7 +133,7 @@ def main(args):
                 dir_path = os.path.join(root, directory)
                 if not os.listdir(dir_path):
                     os.rmdir(dir_path)
-                    logging.info(f"Removed empty directory: {dir_path}")
+                    root_logger.info(f"Removed empty directory: {dir_path}", extra={"log_to_file_only": True})
 
 
 if __name__ == "__main__":
@@ -144,7 +154,7 @@ if __name__ == "__main__":
     parser.add_argument("-V", "--verbose", action="store_true", help="Enable verbose output.")
     parsed_args = parser.parse_args()
     main(args=parsed_args)
-    logging.info(f"{LOGGER_PADDING} Done, program exiting. {LOGGER_PADDING}")
+    root_logger.info(f"{LOGGER_PADDING} Done, program exiting. {LOGGER_PADDING}")
 else:
     print("This script is intended to be run from the command line. "
           "Please run 'python fsbext.py --help' for usage information.")
