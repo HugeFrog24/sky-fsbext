@@ -100,7 +100,7 @@ def main(args):
             try:
                 subprocess.run(
                     [
-                        args.vgmstream_path, os.path.join("in", bank_file),
+                        args.vgmstream_path, os.path.join(args.input_dir, bank_file),
                         "-o", os.path.join(bank_dir, "?n.wav"), "-S", "0"
                     ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
