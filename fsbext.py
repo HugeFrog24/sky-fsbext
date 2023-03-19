@@ -3,6 +3,7 @@ import platform
 import os
 import shutil
 import subprocess
+import sys
 import logging
 
 __author__ = "Tibik"
@@ -83,6 +84,8 @@ def main(args):
             logging.info(f"Created output directory: {bank_dir}")
 
             # Extract the bank file to WAV files
+            status = None
+            err_reason = ""
             try:
                 subprocess.run(
                     [
@@ -90,12 +93,19 @@ def main(args):
                         "-o", os.path.join(bank_dir, "?n.wav"), "-S", "0"
                     ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
-            except subprocess.CalledProcessError:
-                logging.warning(f"Failed to extract {bank_file}")
-                print(f"Failed to extract {bank_file}")
+            except subprocess.CalledProcessError as e:
+                status = False
+                err_reason = e
             else:
-                logging.info(f"Extracted {bank_file} to {bank_dir}")
+                status = True
                 extracted_files += 1
+            finally:
+                logging.info(
+                    f"Processing {bank_file}: {'OK!' if status else 'ERR!'}"
+                    f"{' - saved to ' + bank_dir if status else ''}"
+                )
+                if not status:
+                    logging.error(f"An error occurred while extracting {bank_file}: {err_reason}")
 
                 # Check if the output directory is empty and remove it if it is
                 if not os.listdir(bank_dir):
