@@ -66,12 +66,12 @@ def extract_and_move_files(args, bank_files):
     extracted_files = 0
     for bank_file in bank_files:
         # Determine the output directory
-        if bank_file.startswith("Music_"):
-            bank_dir = args.output_dir / "Music" / bank_file[:-5]
-        elif bank_file.startswith("SFX_"):
+        if bank_file.name.startswith("Music_"):
+            bank_dir = args.output_dir / "Music" / bank_file.stem
+        elif bank_file.name.startswith("SFX_"):
             bank_dir = args.output_dir / "SFX"
         else:
-            bank_dir = args.output_dir / "Other" / bank_file[:-5]
+            bank_dir = args.output_dir / "Other" / bank_file.stem
 
         # Create the output directory if it doesn't exist
         bank_dir.mkdir(parents=True, exist_ok=True)
