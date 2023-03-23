@@ -69,7 +69,7 @@ def extract_and_move_files(args, bank_files):
         if bank_file.name.startswith("Music_"):
             bank_dir = args.output_dir / "Music" / bank_file.stem
         elif bank_file.name.startswith("SFX_"):
-            bank_dir = args.output_dir / "SFX"
+            bank_dir = args.output_dir / "SFX" / bank_file.stem
         else:
             bank_dir = args.output_dir / "Other" / bank_file.stem
 
