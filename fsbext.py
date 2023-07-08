@@ -58,13 +58,18 @@ def create_directory_structure(output_dir: Path):
 def remove_empty_directories(output_dir: Path):
     for dir_path in output_dir.glob('**/*'):
         if dir_path.is_dir() and not any(dir_path.iterdir()):
-            shutil.rmtree(dir_path)
-            root_logger.info(f"Removed empty directory: {dir_path}", extra={"log_to_file_only": True})
+            try:
+                shutil.rmtree(dir_path)
+            except PermissionError:
+                root_logger.error(f"Failed to remove directory: {dir_path}", extra={"log_to_file_only": True})
+            else:
+                root_logger.info(f"Removed empty directory: {dir_path}", extra={"log_to_file_only": True})
 
 
 def extract_and_move_files(args, bank_files):
     extracted_files = 0
-    for bank_file in bank_files:
+    total_files = len(bank_files)
+    for i, bank_file in enumerate(bank_files, start=1):
         # Determine the output directory
         if bank_file.name.startswith("Music_"):
             bank_dir = args.output_dir / "Music" / bank_file.stem
@@ -94,9 +99,7 @@ def extract_and_move_files(args, bank_files):
             status = True
             extracted_files += 1
         finally:
-            root_logger.info(
-                f"Processing {bank_file}: {'OK!' if status else 'ERR!'}"
-            )
+            root_logger.info(f"Processing file {i} of {total_files}: {bank_file}: {'OK!' if status else 'ERR!'}")
             if not status:
                 root_logger.error(f"An error occurred while extracting {bank_file}: {err_reason}",
                                   extra={"log_to_file_only": True})
@@ -114,8 +117,8 @@ def main(args):
     root_logger.info(f"{LOGGER_PADDING} {version_str} {LOGGER_PADDING}")
     root_logger.info(f"Operating system: {platform.platform()}")
     if args.version:
-        print(version_str)
-        exit()
+        root_logger.info(version_str)
+        sys.exit()
     check_disk_space()
 
     # Log input and output directories
@@ -140,7 +143,7 @@ def main(args):
     # Check if the vgmstream executable is present and get its version number
     if not args.vgmstream_path.is_file():
         root_logger.error("vgmstream-cli executable not found")
-        exit(1)
+        sys.exit(1)
 
     extracted_files = extract_and_move_files(args, bank_files)
 
