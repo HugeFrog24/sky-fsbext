@@ -2,16 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - _(2023-09-30)_
+
+- ### Added
+  - Implemented dynamic disk space check based on a compression ratio.
+  - Improved code documentation with inline comments for better readability.
+
+- ### Fixed
+  - Corrected path handling to ensure proper file and directory management, resolving potential double directory issues (e.g., './in/in/').
+
 ## [1.0.1] - _(2023-03-17)_
 
-### Added
-- More flexibility, advanced logging and command-line arguments
+- ### Added
+  - More flexibility, advanced logging and command-line arguments
 
-### Changed
-- Suppress the verbose output of vgmstream-cli by default
+- ### Changed
+  - Suppress the verbose output of vgmstream-cli by default
 
-### Fixed
-- Made the script more robust in general
+- ### Fixed
+  - Made the script more robust in general
 
 ## [1.0.0] - _(2023-03-17)_
 

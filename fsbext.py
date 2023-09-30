@@ -7,10 +7,9 @@ import logging
 from pathlib import Path
 
 __author__ = "Tibik"
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
-# Define the minimum required disk space (in bytes)
-MIN_DISK_SPACE = 7 * 1024 * 1024 * 1024
+COMPRESSION_RATIO = 8 / 1
 
 
 class ConsoleFilter(logging.Filter):
@@ -38,14 +37,33 @@ root_logger.addHandler(console_handler)
 LOGGER_PADDING = '=' * 10
 
 
-def check_disk_space():
+def check_disk_space(input_dir: Path):
+    # Calculate the size of the input directory in GB
+    input_dir_size_gb = get_size_of_dir(input_dir) / (1024 * 1024 * 1024)
+
+    # Calculate the expected space needed for extraction in GB
+    expected_size_gb = input_dir_size_gb * COMPRESSION_RATIO
+
+    # Convert expected size to bytes
+    expected_size_bytes = expected_size_gb * 1024 * 1024 * 1024
+
     # Check available disk space
     free_space = shutil.disk_usage(".").free
-    if free_space < MIN_DISK_SPACE:
+    if free_space < expected_size_bytes:
         root_logger.warning(
-            f"Less than {MIN_DISK_SPACE / (1024 * 1024 * 1024):.2f} GB of disk space available "
-            f"({free_space / (1024 * 1024 * 1024):.2f} GB)"
+            f"Less than {expected_size_gb:.2f} GB of disk space available for extraction "
+            f"({free_space / (1024 * 1024 * 1024):.2f} GB free)"
         )
+
+
+def get_size_of_dir(directory: Path) -> int:
+    """
+    Calculate the total size of a directory using pathlib.
+
+    :param directory: Path object representing the directory.
+    :return: Total size of the directory in bytes.
+    """
+    return sum(file.stat().st_size for file in directory.rglob('*') if file.is_file())
 
 
 def create_directory_structure(output_dir: Path):
@@ -88,7 +106,7 @@ def extract_and_move_files(args, bank_files):
         try:
             subprocess.run(
                 [
-                    args.vgmstream_path, args.input_dir / bank_file,
+                    args.vgmstream_path, bank_file,
                     "-o", bank_dir / "?n.wav", "-S", "0"
                 ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
@@ -119,7 +137,7 @@ def main(args):
     if args.version:
         root_logger.info(version_str)
         sys.exit()
-    check_disk_space()
+    check_disk_space(args.input_dir)
 
     # Log input and output directories
     root_logger.info(f"Input directory: {args.input_dir}")
@@ -175,5 +193,6 @@ if __name__ == "__main__":
     main(args=parsed_args)
     root_logger.info(f"{LOGGER_PADDING} Done, program exiting. {LOGGER_PADDING}")
 else:
-    print("This script is intended to be run from the command line. "
-          "Please run 'python fsbext.py --help' for usage information.")
+    # Print guidance when this script is imported as a module rather than being run directly.
+    print(f"This script is intended to be run from the command line. "
+          f"Please run 'python {Path(__file__).name} --help' for usage information.")
