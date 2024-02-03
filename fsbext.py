@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 
 __author__ = "Tibik"
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 
 COMPRESSION_RATIO = 8 / 1
 
