@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.3] - _(2024-02-03)_
 
+- ### Fixed
+  - Improved logging mechanism.
+
+## [1.0.3] - _(2024-02-03)_
+
 - ### Added
   - Enhanced `check_disk_space` to support mock testing and added string conversion in subprocess calls.
 
