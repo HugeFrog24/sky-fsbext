@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 
 __author__ = "Tibik"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 COMPRESSION_RATIO = 8 / 1
 
@@ -37,7 +37,17 @@ root_logger.addHandler(console_handler)
 LOGGER_PADDING = '=' * 10
 
 
-def check_disk_space(input_dir: Path):
+def get_size_of_dir(directory: Path) -> int:
+    """
+    Calculate the total size of a directory using pathlib.
+
+    :param directory: Path object representing the directory.
+    :return: Total size of the directory in bytes.
+    """
+    return sum(file.stat().st_size for file in directory.rglob('*') if file.is_file())
+
+
+def check_disk_space(input_dir: Path, output_dir: Path, disk_usage=shutil.disk_usage, get_size_of_dir=get_size_of_dir):
     # Calculate the size of the input directory in GB
     input_dir_size_gb = get_size_of_dir(input_dir) / (1024 * 1024 * 1024)
 
@@ -47,23 +57,13 @@ def check_disk_space(input_dir: Path):
     # Convert expected size to bytes
     expected_size_bytes = expected_size_gb * 1024 * 1024 * 1024
 
-    # Check available disk space
-    free_space = shutil.disk_usage(".").free
+    # Check available disk space in the output directory
+    free_space = disk_usage(output_dir).free
     if free_space < expected_size_bytes:
         root_logger.warning(
             f"Less than {expected_size_gb:.2f} GB of disk space available for extraction "
             f"({free_space / (1024 * 1024 * 1024):.2f} GB free)"
         )
-
-
-def get_size_of_dir(directory: Path) -> int:
-    """
-    Calculate the total size of a directory using pathlib.
-
-    :param directory: Path object representing the directory.
-    :return: Total size of the directory in bytes.
-    """
-    return sum(file.stat().st_size for file in directory.rglob('*') if file.is_file())
 
 
 def create_directory_structure(output_dir: Path):
@@ -106,8 +106,8 @@ def extract_and_move_files(args, bank_files):
         try:
             subprocess.run(
                 [
-                    args.vgmstream_path, bank_file,
-                    "-o", bank_dir / "?n.wav", "-S", "0"
+                    str(args.vgmstream_path), str(bank_file),
+                    "-o", str(bank_dir / "?n.wav"), "-S", "0"
                 ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
         except subprocess.CalledProcessError as e:
@@ -137,13 +137,12 @@ def main(args):
     if args.version:
         root_logger.info(version_str)
         sys.exit()
-    check_disk_space(args.input_dir)
+    
+    check_disk_space(args.input_dir, args.output_dir)
 
     # Log input and output directories
     root_logger.info(f"Input directory: {args.input_dir}")
     root_logger.info(f"Output directory: {args.output_dir}")
-
-    create_directory_structure(args.output_dir)
 
     # Check if the "in" directory exists and rebuild it if necessary
     if not args.input_dir.is_dir():
@@ -157,20 +156,23 @@ def main(args):
         root_logger.warning("No sound banks found in input directory")
     else:
         root_logger.info(f"Found {len(bank_files)} sound bank(s) in input directory")
+        # Only create directory structure if sound banks are found
+        create_directory_structure(args.output_dir)
 
     # Check if the vgmstream executable is present and get its version number
-    if not args.vgmstream_path.is_file():
+    if not args.vgmstream_path.resolve().is_file():
         root_logger.error("vgmstream-cli executable not found")
         sys.exit(1)
 
-    extracted_files = extract_and_move_files(args, bank_files)
+    if bank_files:
+        extracted_files = extract_and_move_files(args, bank_files)
 
-    if extracted_files > 0:
-        root_logger.info(f"Successfully extracted {extracted_files} bank file(s)")
-    else:
-        root_logger.warning("No sound banks were extracted")
+        if extracted_files > 0:
+            root_logger.info(f"Successfully extracted {extracted_files} bank file(s)")
+        else:
+            root_logger.warning("No sound banks were extracted")
 
-    remove_empty_directories(args.output_dir)
+        remove_empty_directories(args.output_dir)
 
 
 if __name__ == "__main__":

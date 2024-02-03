@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - _(2024-02-03)_
+
+- ### Added
+  - Enhanced `check_disk_space` to support mock testing and added string conversion in subprocess calls.
+
+- ### Changed
+  - Refactored disk space check to target the output directory and improved path resolution for `vgmstream-cli`.
+
+- ### Fixed
+  - Improved error handling in file extraction and directory management for increased stability.
+
 ## [1.0.2] - _(2023-09-30)_
 
 - ### Added
