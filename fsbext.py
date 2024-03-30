@@ -7,9 +7,7 @@ import logging
 from pathlib import Path
 
 __author__ = "Tibik"
-__version__ = "1.0.4"
-
-COMPRESSION_RATIO = 8 / 1
+__version__ = "1.0.5"
 
 
 class ConsoleFilter(logging.Filter):
@@ -60,12 +58,21 @@ def get_size_of_dir(directory: Path) -> int:
     return sum(file.stat().st_size for file in directory.rglob('*') if file.is_file())
 
 
-def check_disk_space(input_dir: Path, output_dir: Path, disk_usage=shutil.disk_usage, get_size_of_dir=get_size_of_dir):
+def check_disk_space(input_dir: Path, output_dir: Path, compression_ratio: float, disk_usage=shutil.disk_usage, get_size_of_dir=get_size_of_dir):
+    """
+    Check if there is enough disk space in the output directory based on the size of the input directory and a given compression ratio.
+
+    :param input_dir: Path object representing the input directory.
+    :param output_dir: Path object representing the output directory.
+    :param compression_ratio: The ratio used to estimate the expected size after extraction.
+    :param disk_usage: Function to use for getting disk usage, default is shutil.disk_usage.
+    :param get_size_of_dir: Function to use for calculating the size of a directory, default is the get_size_of_dir function defined above.
+    """
     # Calculate the size of the input directory in GB
     input_dir_size_gb = get_size_of_dir(input_dir) / (1024 * 1024 * 1024)
 
     # Calculate the expected space needed for extraction in GB
-    expected_size_gb = input_dir_size_gb * COMPRESSION_RATIO
+    expected_size_gb = input_dir_size_gb * compression_ratio
 
     # Convert expected size to bytes
     expected_size_bytes = expected_size_gb * 1024 * 1024 * 1024
@@ -152,7 +159,7 @@ def main(args):
         logger.info(version_str)
         sys.exit()
     
-    check_disk_space(args.input_dir, args.output_dir)
+    check_disk_space(args.input_dir, args.output_dir, args.compression_ratio)
 
     # Log input and output directories
     logger.info(f"Input directory: {args.input_dir}")
@@ -205,6 +212,10 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output-dir", default="out", type=Path, help="Path to the output directory.")
     parser.add_argument("-v", "--version", action="store_true", help="Prints script version.")
     parser.add_argument("-V", "--verbose", action="store_true", help="Enable verbose output.")
+    parser.add_argument(
+        "-c", "--compression-ratio", default=8.0, type=float,
+        help="Compression ratio used for calculating disk space requirements. Default is 8.0."
+    )
     parsed_args = parser.parse_args()
     main(args=parsed_args)
     logger.info(f"{LOGGER_PADDING} Done, program exiting. {LOGGER_PADDING}")

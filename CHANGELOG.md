@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.5] - _(2024-03-30)_
+
+- ### Added
+  - Command-line argument for custom compression ratio.
+- ### Changed
+  - `check_disk_space` now accepts compression ratio as an argument.
+
 ## [1.0.4] - _(2024-02-03)_
 
 - ### Fixed

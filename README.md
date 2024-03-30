@@ -20,6 +20,7 @@ for example with a regular audio player or for other non-commercial purposes.
   - `-i` or `--input-dir` to specify the path to the input directory (default is `in`)
   - `-o` or `--output-dir` to specify the path to the output directory (default is `out`)
   - `--vgmstream-path` to provide the path to the `vgmstream-cli` executable (default is `vgmstream-win64/vgmstream-cli.exe`)
+  - `-c` or `--compression-ratio` to specify the compression ratio used for calculating disk space requirements (default is 8.0)
   - `-V` or `--verbose` to enable verbose output.
   - `-v` or `--version` to print the script version.
 
