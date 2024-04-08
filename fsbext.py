@@ -18,7 +18,7 @@ class ConsoleFilter(logging.Filter):
 # Set up module-specific logger
 logger = logging.getLogger(__name__)
 
-def setup_logging(verbose, apply_console_filter=True):
+def setup_logging(verbose: bool, apply_console_filter: bool = True):
     """
     Set up logging for the application.
     
