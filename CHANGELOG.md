@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.6] - _(2024-04-09)_
+
+- ### Fixed
+  - Improved stability and performance
+  - Better error handling and logging
+  - Optimized directory management
+
 ## [1.0.5] - _(2024-03-30)_
 
 - ### Added

@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 
 __author__ = "Tibik"
-__version__ = "1.0.5"
+__version__ = "1.0.6"
 
 
 class ConsoleFilter(logging.Filter):
@@ -87,10 +87,15 @@ def check_disk_space(input_dir: Path, output_dir: Path, compression_ratio: float
 
 
 def create_directory_structure(output_dir: Path):
-    (output_dir / "Music").mkdir(parents=True, exist_ok=True)
-    (output_dir / "SFX").mkdir(parents=True, exist_ok=True)
-    (output_dir / "Other").mkdir(parents=True, exist_ok=True)
-    logger.info("Created directory structure.")
+    directories = ["Music", "SFX", "Other"]
+    for dir_name in directories:
+        try:
+            (output_dir / dir_name).mkdir(parents=True, exist_ok=True)
+        except PermissionError as e:
+            logger.error(f"Failed to create directory {dir_name} due to permission error: {e}")
+            continue
+        else:
+            logger.info(f"Created directory structure for {dir_name}.")
 
 
 def remove_empty_directories(output_dir: Path):
@@ -104,7 +109,7 @@ def remove_empty_directories(output_dir: Path):
                 logger.info(f"Removed empty directory: {dir_path}", extra={"log_to_file_only": True})
 
 
-def extract_and_move_files(args, bank_files):
+def extract_and_move_files(args, bank_files: list[Path]):
     extracted_files = 0
     total_files = len(bank_files)
     for i, bank_file in enumerate(bank_files, start=1):
@@ -116,13 +121,15 @@ def extract_and_move_files(args, bank_files):
         else:
             bank_dir = args.output_dir / "Other" / bank_file.stem
 
-        # Create the output directory if it doesn't exist
-        bank_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Created output directory: {bank_dir}", extra={"log_to_file_only": True})
+        # Check if the output directory can be created or exists
+        try:
+            bank_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Created output directory: {bank_dir}", extra={"log_to_file_only": True})
+        except PermissionError as e:
+            logger.error(f"Failed to create or access directory {bank_dir} due to permission error: {e}")
+            continue  # Skip to the next file if the directory cannot be created or accessed
 
-        # Extract the bank file to WAV files
-        status = None
-        err_reason = ""
+        # Proceed with file extraction
         try:
             subprocess.run(
                 [
@@ -130,22 +137,16 @@ def extract_and_move_files(args, bank_files):
                     "-o", str(bank_dir / "?n.wav"), "-S", "0"
                 ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
-        except subprocess.CalledProcessError as e:
-            status = False
-            err_reason = e
-        else:
-            status = True
             extracted_files += 1
-        finally:
-            logger.info(f"Processing file {i} of {total_files}: {bank_file}: {'OK!' if status else 'ERR!'}")
-            if not status:
-                logger.error(f"An error occurred while extracting {bank_file}: {err_reason}",
-                                  extra={"log_to_file_only": True})
+            logger.info(f"Processing file {i} of {total_files}: {bank_file}: OK!")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"An error occurred while extracting {bank_file}: {e}",
+                         extra={"log_to_file_only": True})
 
-            # Check if the output directory is empty and remove it if it is
-            if not any(bank_dir.iterdir()):
-                shutil.rmtree(bank_dir)
-                logger.info(f"Removed empty directory: {bank_dir}", extra={"log_to_file_only": True})
+        # Check if the output directory is empty and remove it if it is
+        if bank_dir.exists() and not any(bank_dir.iterdir()):
+            shutil.rmtree(bank_dir)
+            logger.info(f"Removed empty directory: {bank_dir}", extra={"log_to_file_only": True})
 
     return extracted_files
 
