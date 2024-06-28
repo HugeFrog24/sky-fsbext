@@ -55,7 +55,15 @@ func main() {
 	flag.Parse()
 
 	summaryLogger.Printf("========== SKY-FSBEXT version: %s by %s ==========\n", version, author)
-	summaryLogger.Printf("Operating system: %s\n", runtime.GOOS)
+
+	// Get the Windows version and build number
+	osVersion, err := getWindowsVersion()
+	if err != nil {
+		summaryLogger.Printf("Operating system: %s\n", runtime.GOOS)
+		summaryLogger.Printf("Failed to get Windows version: %v\n", err)
+	} else {
+		summaryLogger.Printf("Operating system: %s\n", osVersion)
+	}
 
 	if flag.Arg(0) == "--version" {
 		fmt.Printf("SKY-FSBEXT version: %s by %s\n", version, author)
@@ -196,6 +204,16 @@ func isDirEmpty(name string) (bool, error) {
 		return true, nil
 	}
 	return false, err
+}
+
+// getWindowsVersion retrieves the Windows version and build number
+func getWindowsVersion() (string, error) {
+	cmd := exec.Command("cmd", "/C", "ver")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 func extractAndMoveFiles(bankFiles []string) int {
