@@ -28,6 +28,7 @@ var (
 var (
 	fileLogger    *log.Logger
 	consoleLogger *log.Logger
+	summaryLogger *log.Logger
 )
 
 func init() {
@@ -44,7 +45,8 @@ func init() {
 }
 
 func main() {
-	defer log.Println("========== Done, program exiting. ==========")
+	setupLogging()
+	defer summaryLogger.Println("========== Done, program exiting. ==========")
 
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
@@ -52,10 +54,8 @@ func main() {
 	}
 	flag.Parse()
 
-	setupLogging()
-
-	log.Printf("========== SKY-FSBEXT version: %s by %s ==========\n", version, author)
-	log.Printf("Operating system: %s\n", runtime.GOOS)
+	summaryLogger.Printf("========== SKY-FSBEXT version: %s by %s ==========\n", version, author)
+	summaryLogger.Printf("Operating system: %s\n", runtime.GOOS)
 
 	if flag.Arg(0) == "--version" {
 		fmt.Printf("SKY-FSBEXT version: %s by %s\n", version, author)
@@ -121,6 +121,9 @@ func setupLogging() {
 
 	// Create a custom logger for console output
 	consoleLogger = log.New(os.Stdout, "", 0)
+
+	// Create a logger for summary messages that writes to both the console and the log file
+	summaryLogger = log.New(io.MultiWriter(os.Stdout, logFile), "", log.LstdFlags)
 
 	// Set the standard logger to write to the file
 	log.SetOutput(logFile)
