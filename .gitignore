@@ -11,3 +11,4 @@ fsbext.log
 
 # Local IDE settings & config
 .idea/
+.aider*
