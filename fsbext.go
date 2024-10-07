@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync" // Add this import
 )
 
 const (
@@ -23,6 +24,7 @@ var (
 	outputDir        string
 	vgmstreamPath    string
 	compressionRatio float64
+	maxWorkers       int // Add this line
 )
 
 var (
@@ -42,6 +44,8 @@ func init() {
 	flag.Float64Var(&compressionRatio, "compression-ratio", 8.0, "Compression ratio used for calculating disk space requirements.")
 	flag.BoolVar(&verbose, "v", false, "Enable verbose output.")
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose output.")
+	flag.IntVar(&maxWorkers, "w", 4, "Number of concurrent workers.")       // Add this line
+	flag.IntVar(&maxWorkers, "workers", 4, "Number of concurrent workers.") // Add this line
 }
 
 func main() {
@@ -105,7 +109,7 @@ func main() {
 	}
 
 	if len(bankFiles) > 0 {
-		extractedFiles := extractAndMoveFiles(bankFiles)
+		extractedFiles := processBankFilesConcurrently(bankFiles, maxWorkers) // Modify this line
 
 		if extractedFiles > 0 {
 			log.Printf("Successfully extracted %d bank file(s)\n", extractedFiles)
@@ -216,59 +220,95 @@ func getWindowsVersion() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-func extractAndMoveFiles(bankFiles []string) int {
-	extractedFiles := 0
-	for i, bankFile := range bankFiles {
-		if _, err := os.Stat(bankFile); os.IsNotExist(err) {
-			fileLogger.Printf("Bank file does not exist: %s\n", bankFile)
-			continue
-		}
+func processBankFilesConcurrently(bankFiles []string, maxWorkers int) int {
+	var wg sync.WaitGroup
+	bankFileChan := make(chan string)
+	var totalExtractedFiles int
+	var mu sync.Mutex
+	var printMutex sync.Mutex // To synchronize console output
 
-		if !isValidBankFile(bankFile) {
-			fileLogger.Printf("Invalid bank file: %s\n", bankFile)
-			continue
-		}
-
-		baseName := filepath.Base(bankFile)
-		baseNameWithoutExt := strings.TrimSuffix(baseName, filepath.Ext(baseName))
-		var bankDir string
-		if strings.HasPrefix(baseName, "Music_") {
-			bankDir = filepath.Join(outputDir, "Music", baseNameWithoutExt)
-		} else if strings.HasPrefix(baseName, "SFX_") {
-			bankDir = filepath.Join(outputDir, "SFX", baseNameWithoutExt)
-		} else {
-			bankDir = filepath.Join(outputDir, "Other", baseNameWithoutExt)
-		}
-
-		if err := os.MkdirAll(bankDir, os.ModePerm); err != nil {
-			fileLogger.Printf("Failed to create or access directory %s: %v\n", bankDir, err)
-			continue
-		}
-
-		outputPattern := filepath.Join(bankDir, "?n.wav")
-		cmd := exec.Command(vgmstreamPath, "-v", "-o", outputPattern, bankFile)
-		fmt.Printf("Processing file %d of %d: %s", i+1, len(bankFiles), bankFile)
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			fmt.Printf(": FAIL\n")
-			fileLogger.Printf("Failed to extract %s: %v\nCommand output: %s\n", bankFile, err, string(output))
-			continue
-		}
-
-		extractedCount, err := countFilesInDir(bankDir)
-		if err != nil {
-			fmt.Printf(": FAIL\n")
-			fileLogger.Printf("Error counting files in %s: %v\n", bankDir, err)
-		} else if extractedCount == 0 {
-			fmt.Printf(": FAIL\n")
-			fileLogger.Printf("No files were extracted to %s\n", bankDir)
-		} else {
-			fmt.Printf(": OK\n")
-			fileLogger.Printf("Successfully extracted %d files from %s to %s\n", extractedCount, bankFile, bankDir)
-			extractedFiles += extractedCount
-		}
+	// Start worker goroutines
+	for i := 0; i < maxWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for bankFile := range bankFileChan {
+				extractedCount := extractAndMoveFile(bankFile, &printMutex)
+				mu.Lock()
+				totalExtractedFiles += extractedCount
+				mu.Unlock()
+			}
+		}()
 	}
-	return extractedFiles
+
+	// Send bank files to the channel
+	go func() {
+		for _, bankFile := range bankFiles {
+			bankFileChan <- bankFile
+		}
+		close(bankFileChan)
+	}()
+
+	// Wait for all workers to finish
+	wg.Wait()
+	return totalExtractedFiles
+}
+
+func extractAndMoveFile(bankFile string, printMutex *sync.Mutex) int {
+	// Check if the bank file exists
+	if _, err := os.Stat(bankFile); os.IsNotExist(err) {
+		fileLogger.Printf("Bank file does not exist: %s\n", bankFile)
+		return 0
+	}
+
+	if !isValidBankFile(bankFile) {
+		fileLogger.Printf("Invalid bank file: %s\n", bankFile)
+		return 0
+	}
+
+	baseName := filepath.Base(bankFile)
+	baseNameWithoutExt := strings.TrimSuffix(baseName, filepath.Ext(baseName))
+	var bankDir string
+	if strings.HasPrefix(baseName, "Music_") {
+		bankDir = filepath.Join(outputDir, "Music", baseNameWithoutExt)
+	} else if strings.HasPrefix(baseName, "SFX_") {
+		bankDir = filepath.Join(outputDir, "SFX", baseNameWithoutExt)
+	} else {
+		bankDir = filepath.Join(outputDir, "Other", baseNameWithoutExt)
+	}
+
+	if err := os.MkdirAll(bankDir, os.ModePerm); err != nil {
+		fileLogger.Printf("Failed to create or access directory %s: %v\n", bankDir, err)
+		return 0
+	}
+
+	outputPattern := filepath.Join(bankDir, "?02s_?n.wav")
+	cmd := exec.Command(vgmstreamPath, "-v", "-S", "0", "-o", outputPattern, bankFile)
+
+	// Synchronized console output
+	safePrintf(printMutex, "Processing file: %s", bankFile)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		safePrintf(printMutex, ": FAIL\n")
+		fileLogger.Printf("Failed to extract %s: %v\nCommand output: %s\n", bankFile, err, string(output))
+		return 0
+	}
+
+	extractedCount, err := countFilesInDir(bankDir)
+	if err != nil {
+		safePrintf(printMutex, ": FAIL\n")
+		fileLogger.Printf("Error counting files in %s: %v\n", bankDir, err)
+		return 0
+	} else if extractedCount == 0 {
+		safePrintf(printMutex, ": FAIL\n")
+		fileLogger.Printf("No files were extracted to %s\n", bankDir)
+		return 0
+	} else {
+		safePrintf(printMutex, ": OK (%d files extracted)\n", extractedCount)
+		fileLogger.Printf("Successfully extracted %d files from %s to %s\n", extractedCount, bankFile, bankDir)
+		return extractedCount
+	}
 }
 
 func isValidBankFile(filePath string) bool {
@@ -303,4 +343,10 @@ func countFilesInDir(dir string) (int, error) {
 		}
 	}
 	return count, nil
+}
+
+func safePrintf(mutex *sync.Mutex, format string, args ...interface{}) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	fmt.Printf(format, args...)
 }
