@@ -15,3 +15,6 @@ fsbext.log
 
 # Go vendor directory
 vendor/
+
+# Go build directory
+build/

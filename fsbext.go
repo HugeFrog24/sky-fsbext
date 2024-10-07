@@ -10,12 +10,12 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync" // Add this import
+	"sync"
 )
 
 const (
 	author  = "Tibik"
-	version = "1.0.6"
+	version = "1.0.7"
 )
 
 var (
@@ -24,7 +24,7 @@ var (
 	outputDir        string
 	vgmstreamPath    string
 	compressionRatio float64
-	maxWorkers       int // Add this line
+	maxWorkers       int
 )
 
 var (
@@ -44,8 +44,8 @@ func init() {
 	flag.Float64Var(&compressionRatio, "compression-ratio", 8.0, "Compression ratio used for calculating disk space requirements.")
 	flag.BoolVar(&verbose, "v", false, "Enable verbose output.")
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose output.")
-	flag.IntVar(&maxWorkers, "w", 4, "Number of concurrent workers.")       // Add this line
-	flag.IntVar(&maxWorkers, "workers", 4, "Number of concurrent workers.") // Add this line
+	flag.IntVar(&maxWorkers, "w", 4, "Number of concurrent workers.")
+	flag.IntVar(&maxWorkers, "workers", 4, "Number of concurrent workers.")
 }
 
 func main() {
@@ -103,7 +103,7 @@ func main() {
 	}
 
 	if len(bankFiles) > 0 {
-		extractedFiles := processBankFilesConcurrently(bankFiles, maxWorkers) // Modify this line
+		extractedFiles := processBankFilesConcurrently(bankFiles, maxWorkers)
 
 		if extractedFiles > 0 {
 			log.Printf("Successfully extracted %d bank file(s)\n", extractedFiles)
