@@ -12,3 +12,6 @@ fsbext.log
 # Local IDE settings & config
 .idea/
 .aider*
+
+# Go vendor directory
+vendor/

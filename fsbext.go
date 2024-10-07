@@ -60,14 +60,8 @@ func main() {
 
 	summaryLogger.Printf("========== SKY-FSBEXT version: %s by %s ==========\n", version, author)
 
-	// Get the Windows version and build number
-	osVersion, err := getWindowsVersion()
-	if err != nil {
-		summaryLogger.Printf("Operating system: %s\n", runtime.GOOS)
-		summaryLogger.Printf("Failed to get Windows version: %v\n", err)
-	} else {
-		summaryLogger.Printf("Operating system: %s\n", osVersion)
-	}
+	osVersion := getOSVersion()
+	summaryLogger.Printf("Operating system: %s\n", osVersion)
 
 	if flag.Arg(0) == "--version" {
 		fmt.Printf("SKY-FSBEXT version: %s by %s\n", version, author)
@@ -210,14 +204,8 @@ func isDirEmpty(name string) (bool, error) {
 	return false, err
 }
 
-// getWindowsVersion retrieves the Windows version and build number
-func getWindowsVersion() (string, error) {
-	cmd := exec.Command("cmd", "/C", "ver")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(output)), nil
+func getOSVersion() string {
+	return fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 }
 
 func processBankFilesConcurrently(bankFiles []string, maxWorkers int) int {
@@ -255,17 +243,27 @@ func processBankFilesConcurrently(bankFiles []string, maxWorkers int) int {
 }
 
 func extractAndMoveFile(bankFile string, printMutex *sync.Mutex) int {
+	var outputMessage strings.Builder
+	outputMessage.WriteString(fmt.Sprintf("Processing file: %s", bankFile))
+
 	// Check if the bank file exists
 	if _, err := os.Stat(bankFile); os.IsNotExist(err) {
 		fileLogger.Printf("Bank file does not exist: %s\n", bankFile)
+		outputMessage.WriteString(": FAIL\n")
+		// Print the message
+		safePrintf(printMutex, outputMessage.String())
 		return 0
 	}
 
 	if !isValidBankFile(bankFile) {
 		fileLogger.Printf("Invalid bank file: %s\n", bankFile)
+		outputMessage.WriteString(": FAIL\n")
+		// Print the message
+		safePrintf(printMutex, outputMessage.String())
 		return 0
 	}
 
+	// Proceed with extraction (do not lock the mutex here)
 	baseName := filepath.Base(bankFile)
 	baseNameWithoutExt := strings.TrimSuffix(baseName, filepath.Ext(baseName))
 	var bankDir string
@@ -279,34 +277,43 @@ func extractAndMoveFile(bankFile string, printMutex *sync.Mutex) int {
 
 	if err := os.MkdirAll(bankDir, os.ModePerm); err != nil {
 		fileLogger.Printf("Failed to create or access directory %s: %v\n", bankDir, err)
+		outputMessage.WriteString(": FAIL\n")
+		// Print the message
+		safePrintf(printMutex, outputMessage.String())
 		return 0
 	}
 
 	outputPattern := filepath.Join(bankDir, "?02s_?n.wav")
 	cmd := exec.Command(vgmstreamPath, "-v", "-S", "0", "-o", outputPattern, bankFile)
 
-	// Synchronized console output
-	safePrintf(printMutex, "Processing file: %s", bankFile)
-
+	// Run the command without holding the mutex
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		safePrintf(printMutex, ": FAIL\n")
+		outputMessage.WriteString(": FAIL\n")
 		fileLogger.Printf("Failed to extract %s: %v\nCommand output: %s\n", bankFile, err, string(output))
+		// Print the message
+		safePrintf(printMutex, outputMessage.String())
 		return 0
 	}
 
 	extractedCount, err := countFilesInDir(bankDir)
 	if err != nil {
-		safePrintf(printMutex, ": FAIL\n")
+		outputMessage.WriteString(": FAIL\n")
 		fileLogger.Printf("Error counting files in %s: %v\n", bankDir, err)
+		// Print the message
+		safePrintf(printMutex, outputMessage.String())
 		return 0
 	} else if extractedCount == 0 {
-		safePrintf(printMutex, ": FAIL\n")
+		outputMessage.WriteString(": FAIL\n")
 		fileLogger.Printf("No files were extracted to %s\n", bankDir)
+		// Print the message
+		safePrintf(printMutex, outputMessage.String())
 		return 0
 	} else {
-		safePrintf(printMutex, ": OK (%d files extracted)\n", extractedCount)
+		outputMessage.WriteString(fmt.Sprintf(": OK (%d files extracted)\n", extractedCount))
 		fileLogger.Printf("Successfully extracted %d files from %s to %s\n", extractedCount, bankFile, bankDir)
+		// Print the message
+		safePrintf(printMutex, outputMessage.String())
 		return extractedCount
 	}
 }
@@ -345,8 +352,8 @@ func countFilesInDir(dir string) (int, error) {
 	return count, nil
 }
 
-func safePrintf(mutex *sync.Mutex, format string, args ...interface{}) {
+func safePrintf(mutex *sync.Mutex, message string) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	fmt.Printf(format, args...)
+	fmt.Print(message)
 }
