@@ -1,4 +1,4 @@
-module sky-fsbext
+module github.com/HugeFrog24/sky-fsbext
 
 go 1.22.4
 
