@@ -29,7 +29,6 @@ var (
 
 var (
 	fileLogger    *log.Logger
-	consoleLogger *log.Logger
 	summaryLogger *log.Logger
 )
 
@@ -124,9 +123,6 @@ func setupLogging() {
 
 	// Create a custom logger for file logging
 	fileLogger = log.New(logFile, "", log.LstdFlags)
-
-	// Create a custom logger for console output
-	consoleLogger = log.New(os.Stdout, "", 0)
 
 	// Create a logger for summary messages that writes to both the console and the log file
 	summaryLogger = log.New(io.MultiWriter(os.Stdout, logFile), "", log.LstdFlags)

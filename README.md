@@ -5,14 +5,28 @@ This script extracts audio data from sound banks in the assets folder of the vid
 The extracted audio files can be used to listen to the game's audio outside of the game environment, for example, with a regular audio player or for other non-commercial purposes.
 
 ## Prerequisites
-- Go 1.22.7 or higher
 - vgmstream-cli
 - An unpacked Sky APK with the sound banks you wish to extract (usually located at `/path/to/apk/assets/Data/Audio/Fmod/fmodandroid/`).
 - 7 GB minimum free disk space
 
 ## Usage
-1. Ensure that `vgmstream-cli` is installed and accessible from the command line.
-2. Build the program using `go build`.
+
+### For Developers
+1. Ensure that Go 1.23.2 or higher is installed on your system.
+2. Clone the repository and navigate to the project directory.
+3. Run the program using `go run .` with optional command-line arguments:
+    - `-i` or `--input-dir` to specify the path to the input directory (default is `in`).
+    - `-o` or `--output-dir` to specify the path to the output directory (default is `out`).
+    - `-p` or `--vgmstream-path` to provide the path to the `vgmstream-cli` executable (default is `vgmstream-win64/vgmstream-cli.exe`).
+    - `-c` or `--compression-ratio` to specify the compression ratio used for calculating disk space requirements (default is 8.0).
+    - `-v` or `--verbose` to enable verbose output.
+    - `-w` or `--workers` to set the number of concurrent workers (default is 4).
+    - `--version` to print the program version.
+4. Alternatively, build the program using `go build -o build/sky-fsbext` and run the resulting executable from the `build` directory.
+
+### For End Users
+1. Download the latest release binary from the [Releases](https://github.com/HugeFrog24/sky-fsbext/releases) page.
+2. Ensure that `vgmstream-cli` is installed and accessible from the command line.
 3. Run the program with optional command-line arguments:
     - `-i` or `--input-dir` to specify the path to the input directory (default is `in`).
     - `-o` or `--output-dir` to specify the path to the output directory (default is `out`).
