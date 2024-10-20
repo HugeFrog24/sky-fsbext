@@ -78,7 +78,7 @@ func main() {
 	log.Printf("Output directory: %s\n", outputDir)
 
 	if _, err := os.Stat(inputDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(inputDir, os.ModePerm); err != nil {
+		if err := os.MkdirAll(inputDir, 0750); err != nil {
 			log.Fatalf("Failed to create input directory: %v\n", err)
 		}
 		log.Println("Input directory not found - rebuilding")
@@ -117,7 +117,7 @@ func main() {
 
 func setupLogging() {
 	log.SetFlags(log.LstdFlags)
-	logFile, err := os.OpenFile("fsbext.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	logFile, err := os.OpenFile("fsbext.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Fatalf("Failed to open log file: %v\n", err)
 	}
@@ -154,7 +154,7 @@ func createDirectoryStructure(outputDir string) {
 	directories := []string{"Music", "SFX", "Other"}
 	for _, dirName := range directories {
 		dirPath := filepath.Join(outputDir, dirName)
-		if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
+		if err := os.MkdirAll(dirPath, 0750); err != nil {
 			log.Printf("Failed to create directory %s: %v\n", dirName, err)
 		} else {
 			log.Printf("Created directory structure for %s.\n", dirName)
@@ -273,7 +273,7 @@ func extractAndMoveFile(bankFile string, printMutex *sync.Mutex) int {
 		bankDir = filepath.Join(outputDir, "Other", baseNameWithoutExt)
 	}
 
-	if err := os.MkdirAll(bankDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(bankDir, 0750); err != nil {
 		fileLogger.Printf("Failed to create or access directory %s: %v\n", bankDir, err)
 		outputMessage.WriteString(": FAIL\n")
 		// Print the message
@@ -282,6 +282,7 @@ func extractAndMoveFile(bankFile string, printMutex *sync.Mutex) int {
 	}
 
 	outputPattern := filepath.Join(bankDir, "?02s_?n.wav")
+	// #nosec G204
 	cmd := exec.Command(vgmstreamPath, "-v", "-S", "0", "-o", outputPattern, bankFile)
 
 	// Run the command without holding the mutex
@@ -317,9 +318,18 @@ func extractAndMoveFile(bankFile string, printMutex *sync.Mutex) int {
 }
 
 func isValidBankFile(filePath string) bool {
-	file, err := os.Open(filePath)
+	baseDir := filepath.Clean(inputDir) // Assuming inputDir is the base directory
+
+	cleanPath := filepath.Clean(filePath)
+	// Ensure the filePath is within the baseDir
+	if !strings.HasPrefix(cleanPath, baseDir) {
+		fileLogger.Printf("Attempted access outside base directory: %s\n", filePath)
+		return false
+	}
+
+	file, err := os.Open(cleanPath)
 	if err != nil {
-		fileLogger.Printf("Failed to open bank file %s: %v\n", filePath, err)
+		fileLogger.Printf("Failed to open bank file %s: %v\n", cleanPath, err)
 		return false
 	}
 	defer file.Close()
@@ -327,11 +337,11 @@ func isValidBankFile(filePath string) bool {
 	// Read the first 4 bytes
 	header := make([]byte, 4)
 	if _, err := file.Read(header); err != nil {
-		fileLogger.Printf("Failed to read header of bank file %s: %v\n", filePath, err)
+		fileLogger.Printf("Failed to read header of bank file %s: %v\n", cleanPath, err)
 		return false
 	}
 
-	// Check if the header matches the expected format (you may need to adjust this)
+	// Check if the header matches the expected format
 	return string(header) == "RIFF" || string(header) == "FSB5"
 }
 
