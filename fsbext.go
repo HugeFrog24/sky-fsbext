@@ -19,12 +19,13 @@ const (
 )
 
 var (
-	verbose          bool
-	inputDir         string
-	outputDir        string
-	vgmstreamPath    string
-	compressionRatio float64
-	maxWorkers       int
+	verbose                bool
+	inputDir               string
+	outputDir              string
+	vgmstreamPath          string
+	compressionRatio       float64
+	maxWorkers             int
+	extractAndMoveFileFunc = extractAndMoveFile // Add this line
 )
 
 var (
@@ -217,7 +218,8 @@ func processBankFilesConcurrently(bankFiles []string, maxWorkers int) int {
 		go func() {
 			defer wg.Done()
 			for bankFile := range bankFileChan {
-				extractedCount := extractAndMoveFile(bankFile, &printMutex)
+				// Use the mockable function variable here
+				extractedCount := extractAndMoveFileFunc(bankFile, &printMutex)
 				mu.Lock()
 				totalExtractedFiles += extractedCount
 				mu.Unlock()

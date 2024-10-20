@@ -9,22 +9,6 @@ import (
 	"testing"
 )
 
-// Mocking exec.Command for testing extractAndMoveFile
-// type mockCommand struct {
-// 	output []byte
-// 	err    error
-// }
-
-// func (m *mockCommand) CombinedOutput() ([]byte, error) {
-// 	return m.output, m.err
-// }
-
-// Override the exec.Command function for testing
-// var execCommand = exec.Command
-
-// Define a variable for extractAndMoveFile to allow mocking
-var extractAndMoveFileFunc = extractAndMoveFile
-
 func TestGetSizeOfDir(t *testing.T) {
 	// Create a temporary directory with some files
 	tempDir, err := os.MkdirTemp("", "testdir")
@@ -305,18 +289,29 @@ func TestSafePrintf(t *testing.T) {
 
 	// Redirect stdout
 	originalStdout := os.Stdout
-	r, w, _ := os.Pipe()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Failed to create pipe: %v", err)
+	}
 	os.Stdout = w
 
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		defer w.Close()
 		safePrintf(mutex, output)
 	}()
 
-	// Read the output
-	w.Close()               // Close the writer to flush the data
-	buf, _ := io.ReadAll(r) // Use io.ReadAll to read from the pipe
+	// Wait for the goroutine to finish
+	wg.Wait()
+
+	// Restore stdout and read the output
 	os.Stdout = originalStdout
+	buf, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatalf("Failed to read from pipe: %v", err)
+	}
 
 	if string(buf) != output {
 		t.Errorf("Expected output %q, got %q", output, string(buf))
