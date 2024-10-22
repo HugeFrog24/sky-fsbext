@@ -2,12 +2,31 @@ package main
 
 import (
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
 	"testing"
 )
+
+// TestMain sets up the logging before any tests are run and cleans up afterward.
+func TestMain(m *testing.M) {
+	// Redirect log output to discard during tests to avoid cluttering the test output.
+	log.SetOutput(io.Discard)
+
+	// Initialize the loggers.
+	setupLogging()
+
+	// Execute the tests.
+	exitVal := m.Run()
+
+	// Perform any necessary cleanup here.
+	// For example, you might want to remove temporary log files if they are created.
+
+	// Exit with the appropriate code.
+	os.Exit(exitVal)
+}
 
 func TestGetSizeOfDir(t *testing.T) {
 	// Create a temporary directory with some files
@@ -134,38 +153,47 @@ func TestIsDirEmpty(t *testing.T) {
 }
 
 func TestIsValidBankFile(t *testing.T) {
-	// Create a temporary valid bank file
-	validFile, err := os.CreateTemp("", "valid.bank")
+	// Create a temporary directory to act as inputDir
+	tempDir, err := os.MkdirTemp("", "testdir")
 	if err != nil {
-		t.Fatalf("Failed to create temp valid bank file: %v", err)
+		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.Remove(validFile.Name())
+	defer os.RemoveAll(tempDir)
 
-	// Write valid headers
-	if _, err := validFile.Write([]byte("RIFF")); err != nil {
-		t.Fatalf("Failed to write to valid bank file: %v", err)
+	// Set the global inputDir to the temp directory
+	originalInputDir := inputDir
+	inputDir = tempDir
+	defer func() { inputDir = originalInputDir }()
+
+	// Create a temporary valid bank file
+	validFile := filepath.Join(tempDir, "valid.bank")
+	if err := os.WriteFile(validFile, []byte("RIFF1234"), 0644); err != nil {
+		t.Fatalf("Failed to create valid bank file: %v", err)
 	}
-	validFile.Close()
 
-	if !isValidBankFile(validFile.Name()) {
+	if !isValidBankFile(validFile) {
 		t.Errorf("Expected valid bank file")
 	}
 
 	// Create a temporary invalid bank file
-	invalidFile, err := os.CreateTemp("", "invalid.bank")
-	if err != nil {
-		t.Fatalf("Failed to create temp invalid bank file: %v", err)
+	invalidFile := filepath.Join(tempDir, "invalid.bank")
+	if err := os.WriteFile(invalidFile, []byte("XXXX1234"), 0644); err != nil {
+		t.Fatalf("Failed to create invalid bank file: %v", err)
 	}
-	defer os.Remove(invalidFile.Name())
 
-	// Write invalid headers
-	if _, err := invalidFile.Write([]byte("XXXX")); err != nil {
-		t.Fatalf("Failed to write to invalid bank file: %v", err)
-	}
-	invalidFile.Close()
-
-	if isValidBankFile(invalidFile.Name()) {
+	if isValidBankFile(invalidFile) {
 		t.Errorf("Expected invalid bank file")
+	}
+
+	// Test file outside of inputDir
+	outsideFile := filepath.Join(os.TempDir(), "outside.bank")
+	if err := os.WriteFile(outsideFile, []byte("RIFF1234"), 0644); err != nil {
+		t.Fatalf("Failed to create outside bank file: %v", err)
+	}
+	defer os.Remove(outsideFile)
+
+	if isValidBankFile(outsideFile) {
+		t.Errorf("Expected file outside inputDir to be invalid")
 	}
 }
 
