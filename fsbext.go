@@ -117,7 +117,7 @@ func main() {
 
 func setupLogging() {
 	log.SetFlags(log.LstdFlags)
-	logFile, err := os.OpenFile("fsbext.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	logFile, err := os.OpenFile("fsbext.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Fatalf("Failed to open log file: %v\n", err)
 	}
