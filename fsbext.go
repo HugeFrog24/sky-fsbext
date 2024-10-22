@@ -78,7 +78,7 @@ func main() {
 	log.Printf("Output directory: %s\n", outputDir)
 
 	if _, err := os.Stat(inputDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(inputDir, os.ModePerm); err != nil {
+		if err := os.MkdirAll(inputDir, 0750); err != nil {
 			log.Fatalf("Failed to create input directory: %v\n", err)
 		}
 		log.Println("Input directory not found - rebuilding")
@@ -154,7 +154,7 @@ func createDirectoryStructure(outputDir string) {
 	directories := []string{"Music", "SFX", "Other"}
 	for _, dirName := range directories {
 		dirPath := filepath.Join(outputDir, dirName)
-		if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
+		if err := os.MkdirAll(dirPath, 0750); err != nil {
 			log.Printf("Failed to create directory %s: %v\n", dirName, err)
 		} else {
 			log.Printf("Created directory structure for %s.\n", dirName)
