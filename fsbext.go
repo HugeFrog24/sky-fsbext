@@ -318,9 +318,18 @@ func extractAndMoveFile(bankFile string, printMutex *sync.Mutex) int {
 }
 
 func isValidBankFile(filePath string) bool {
-	file, err := os.Open(filePath)
+	baseDir := filepath.Clean(inputDir) // Assuming inputDir is the base directory
+
+	cleanPath := filepath.Clean(filePath)
+	// Ensure the filePath is within the baseDir
+	if !strings.HasPrefix(cleanPath, baseDir) {
+		fileLogger.Printf("Attempted access outside base directory: %s\n", filePath)
+		return false
+	}
+
+	file, err := os.Open(cleanPath)
 	if err != nil {
-		fileLogger.Printf("Failed to open bank file %s: %v\n", filePath, err)
+		fileLogger.Printf("Failed to open bank file %s: %v\n", cleanPath, err)
 		return false
 	}
 	defer file.Close()
@@ -328,11 +337,11 @@ func isValidBankFile(filePath string) bool {
 	// Read the first 4 bytes
 	header := make([]byte, 4)
 	if _, err := file.Read(header); err != nil {
-		fileLogger.Printf("Failed to read header of bank file %s: %v\n", filePath, err)
+		fileLogger.Printf("Failed to read header of bank file %s: %v\n", cleanPath, err)
 		return false
 	}
 
-	// Check if the header matches the expected format (you may need to adjust this)
+	// Check if the header matches the expected format
 	return string(header) == "RIFF" || string(header) == "FSB5"
 }
 
