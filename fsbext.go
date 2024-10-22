@@ -188,7 +188,16 @@ func removeEmptyDirectories(outputDir string) {
 }
 
 func isDirEmpty(name string) (bool, error) {
-	f, err := os.Open(name)
+	// Validate the input path
+	cleanPath := filepath.Clean(name)
+	if !filepath.IsAbs(cleanPath) {
+		cleanPath = filepath.Join(outputDir, cleanPath)
+	}
+	if !strings.HasPrefix(cleanPath, outputDir) {
+		return false, fmt.Errorf("access denied: %s is outside the allowed directory", name)
+	}
+
+	f, err := os.Open(cleanPath)
 	if err != nil {
 		return false, err
 	}
