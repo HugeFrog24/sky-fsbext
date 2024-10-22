@@ -273,7 +273,7 @@ func extractAndMoveFile(bankFile string, printMutex *sync.Mutex) int {
 		bankDir = filepath.Join(outputDir, "Other", baseNameWithoutExt)
 	}
 
-	if err := os.MkdirAll(bankDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(bankDir, 0750); err != nil {
 		fileLogger.Printf("Failed to create or access directory %s: %v\n", bankDir, err)
 		outputMessage.WriteString(": FAIL\n")
 		// Print the message
