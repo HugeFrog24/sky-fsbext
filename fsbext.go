@@ -282,6 +282,7 @@ func extractAndMoveFile(bankFile string, printMutex *sync.Mutex) int {
 	}
 
 	outputPattern := filepath.Join(bankDir, "?02s_?n.wav")
+	// #nosec G204
 	cmd := exec.Command(vgmstreamPath, "-v", "-S", "0", "-o", outputPattern, bankFile)
 
 	// Run the command without holding the mutex
