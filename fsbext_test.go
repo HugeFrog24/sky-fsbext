@@ -89,6 +89,11 @@ func TestRemoveEmptyDirectories(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
+	// Set the global outputDir to the temp directory
+	originalOutputDir := outputDir
+	outputDir = tempDir
+	defer func() { outputDir = originalOutputDir }()
+
 	// Create subdirectories
 	emptyDir := filepath.Join(tempDir, "EmptyDir")
 	nonEmptyDir := filepath.Join(tempDir, "NonEmptyDir")
@@ -126,6 +131,11 @@ func TestIsDirEmpty(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
+
+	// Set the global outputDir to the temp directory
+	originalOutputDir := outputDir
+	outputDir = tempDir
+	defer func() { outputDir = originalOutputDir }()
 
 	// Initially, it should be empty
 	empty, err := isDirEmpty(tempDir)
