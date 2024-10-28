@@ -25,7 +25,7 @@ var (
 	vgmstreamPath          string
 	compressionRatio       float64
 	maxWorkers             int
-	extractAndMoveFileFunc = extractAndMoveFile // Add this line
+	extractAndMoveFileFunc = extractAndMoveFile
 )
 
 var (
