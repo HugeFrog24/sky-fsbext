@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.10] - _(2025-05-24)_
+
+- ### Changed
+  - Updated Go dependencies and tooling
+  
+- ### Fixed
+  - Improved string handling in Windows
+  - Enhanced error handling for file operations
+
 ## [1.0.6] - _(2024-04-09)_
 
 - ### Fixed
