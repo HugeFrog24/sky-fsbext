@@ -332,7 +332,11 @@ func TestExtractAndMoveFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp output dir: %v", err)
 	}
-	defer os.RemoveAll(outputDir)
+	defer func() {
+		if err := os.RemoveAll(outputDir); err != nil {
+			t.Logf("Error removing temp directory: %v", err)
+		}
+	}()
 
 	// Set global outputDir for the test
 	originalOutputDir := outputDir
