@@ -25,7 +25,7 @@ var (
 	vgmstreamPath          string
 	compressionRatio       float64
 	maxWorkers             int
-	extractAndMoveFileFunc = extractAndMoveFile // Add this line
+	extractAndMoveFileFunc = extractAndMoveFile
 )
 
 var (
@@ -53,7 +53,10 @@ func main() {
 	defer summaryLogger.Println("========== Done, program exiting. ==========")
 
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
+		_, err := fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
+		if err != nil {
+			log.Printf("Error writing usage: %v", err)
+		}
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -201,7 +204,11 @@ func isDirEmpty(name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Printf("Error closing file: %v", err)
+		}
+	}()
 
 	_, err = f.Readdir(1)
 	if err == io.EOF {
@@ -341,7 +348,11 @@ func isValidBankFile(filePath string) bool {
 		fileLogger.Printf("Failed to open bank file %s: %v\n", cleanPath, err)
 		return false
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Printf("Error closing file: %v", err)
+		}
+	}()
 
 	// Read the first 4 bytes
 	header := make([]byte, 4)
