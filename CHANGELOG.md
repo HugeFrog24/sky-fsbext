@@ -2,24 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.6] - _(2024-04-09)_
-
-- ### Fixed
-  - Improved stability and performance
-  - Better error handling and logging
-  - Optimized directory management
-
-## [1.0.5] - _(2024-03-30)_
+## [1.0.11] - _(2025-09-04)_
 
 - ### Added
-  - Command-line argument for custom compression ratio.
+  - Steam auto-detection for Windows users - automatically finds and processes Sky audio files from Steam installation if present
+
+## [1.0.10] - _(2025-05-24)_
+
 - ### Changed
-  - `check_disk_space` now accepts compression ratio as an argument.
-
-## [1.0.4] - _(2024-02-03)_
-
+  - Updated Go dependencies and tooling
+  
 - ### Fixed
-  - Improved logging mechanism.
+  - Improved string handling in Windows
+  - Enhanced error handling for file operations
+
 
 ## [1.0.3] - _(2024-02-03)_
 

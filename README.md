@@ -6,10 +6,14 @@ The extracted audio files can be used to listen to the game's audio outside of t
 
 ## Prerequisites
 - vgmstream-cli
-- An unpacked Sky APK with the sound banks you wish to extract (usually located at `/path/to/apk/assets/Data/Audio/Fmod/fmodandroid/`).
+- One of the following:
+  - An unpacked Sky APK with the sound banks you wish to extract (usually located at `/path/to/apk/assets/Data/Audio/Fmod/fmodandroid/`)
+  - Sky: Children of the Light installed via Steam (Windows only - auto-detection supported)
 - 7 GB minimum free disk space
 
 ## Usage
+
+The application supports automatic Steam detection on Windows. If you have Sky: Children of the Light installed via Steam, the program will automatically detect and use the game's audio files when no bank files are found in the input directory.
 
 ### For Developers
 1. Ensure that Go 1.23.2 or higher is installed on your system.
@@ -37,6 +41,11 @@ The extracted audio files can be used to listen to the game's audio outside of t
     - `--version` to print the program version.
 4. Wait for the program to finish processing.
 5. The extracted audio files will be located in the output directory.
+
+### Steam Auto-Detection (Windows Only)
+- If no `.bank` files are found in the input directory, the program will automatically attempt to detect Sky: Children of the Light installed via Steam.
+- The program searches the Windows registry for the Steam installation path and locates audio files in the game's asset directories.
+- This feature works seamlessly without requiring manual file copying or path configuration.
 
 ## Configuration
 - The program logs its progress to `fsbext.log`.

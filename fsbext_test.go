@@ -34,7 +34,11 @@ func TestGetSizeOfDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Error removing temp directory: %v", err)
+		}
+	}()
 
 	// Create files
 	file1 := filepath.Join(tempDir, "file1.txt")
@@ -63,7 +67,11 @@ func TestCreateDirectoryStructure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp output dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Error removing temp directory: %v", err)
+		}
+	}()
 
 	createDirectoryStructure(tempDir)
 
@@ -87,7 +95,16 @@ func TestRemoveEmptyDirectories(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp output dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Error removing temp directory: %v", err)
+		}
+	}()
+
+	// Set the global outputDir to the temp directory
+	originalOutputDir := outputDir
+	outputDir = tempDir
+	defer func() { outputDir = originalOutputDir }()
 
 	// Create subdirectories
 	emptyDir := filepath.Join(tempDir, "EmptyDir")
@@ -125,7 +142,16 @@ func TestIsDirEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Error removing temp directory: %v", err)
+		}
+	}()
+
+	// Set the global outputDir to the temp directory
+	originalOutputDir := outputDir
+	outputDir = tempDir
+	defer func() { outputDir = originalOutputDir }()
 
 	// Initially, it should be empty
 	empty, err := isDirEmpty(tempDir)
@@ -158,7 +184,11 @@ func TestIsValidBankFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Error removing temp directory: %v", err)
+		}
+	}()
 
 	// Set the global inputDir to the temp directory
 	originalInputDir := inputDir
@@ -190,7 +220,11 @@ func TestIsValidBankFile(t *testing.T) {
 	if err := os.WriteFile(outsideFile, []byte("RIFF1234"), 0644); err != nil {
 		t.Fatalf("Failed to create outside bank file: %v", err)
 	}
-	defer os.Remove(outsideFile)
+	defer func() {
+		if err := os.Remove(outsideFile); err != nil {
+			t.Logf("Error removing outside file: %v", err)
+		}
+	}()
 
 	if isValidBankFile(outsideFile) {
 		t.Errorf("Expected file outside inputDir to be invalid")
@@ -203,7 +237,11 @@ func TestCountFilesInDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Error removing temp directory: %v", err)
+		}
+	}()
 
 	// Create files
 	file1 := filepath.Join(tempDir, "file1.txt")
@@ -275,20 +313,30 @@ func TestExtractAndMoveFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp bank file: %v", err)
 	}
-	defer os.Remove(bankFile.Name())
+	defer func() {
+		if err := os.Remove(bankFile.Name()); err != nil {
+			t.Logf("Error removing bank file: %v", err)
+		}
+	}()
 
 	// Write valid header
 	if _, err := bankFile.Write([]byte("RIFF")); err != nil {
 		t.Fatalf("Failed to write to bank file: %v", err)
 	}
-	bankFile.Close()
+	if err := bankFile.Close(); err != nil {
+		t.Fatalf("Failed to close bank file: %v", err)
+	}
 
 	// Create temporary output directory
 	outputDir, err := os.MkdirTemp("", "output")
 	if err != nil {
 		t.Fatalf("Failed to create temp output dir: %v", err)
 	}
-	defer os.RemoveAll(outputDir)
+	defer func() {
+		if err := os.RemoveAll(outputDir); err != nil {
+			t.Logf("Error removing temp directory: %v", err)
+		}
+	}()
 
 	// Set global outputDir for the test
 	originalOutputDir := outputDir
@@ -327,7 +375,11 @@ func TestSafePrintf(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		defer w.Close()
+		defer func() {
+			if err := w.Close(); err != nil {
+				t.Logf("Error closing pipe writer: %v", err)
+			}
+		}()
 		safePrintf(mutex, output)
 	}()
 

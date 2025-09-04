@@ -15,8 +15,13 @@ func CheckDiskSpace(outputDir string, requiredSpace uint64) {
 
 	var freeBytesAvailable, totalNumberOfBytes, totalNumberOfFreeBytes int64
 
-	_, _, err := c.Call(
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(outputDir))),
+	outputDirPtr, err := syscall.UTF16PtrFromString(outputDir)
+	if err != nil {
+		log.Fatalf("Failed to convert path to UTF16: %v\n", err)
+	}
+
+	_, _, err = c.Call(
+		uintptr(unsafe.Pointer(outputDirPtr)),
 		uintptr(unsafe.Pointer(&freeBytesAvailable)),
 		uintptr(unsafe.Pointer(&totalNumberOfBytes)),
 		uintptr(unsafe.Pointer(&totalNumberOfFreeBytes)),

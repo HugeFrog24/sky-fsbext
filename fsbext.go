@@ -15,7 +15,7 @@ import (
 
 const (
 	author  = "Tibik"
-	version = "1.0.7"
+	version = "1.0.11"
 )
 
 var (
@@ -25,7 +25,7 @@ var (
 	vgmstreamPath          string
 	compressionRatio       float64
 	maxWorkers             int
-	extractAndMoveFileFunc = extractAndMoveFile // Add this line
+	extractAndMoveFileFunc = extractAndMoveFile
 )
 
 var (
@@ -53,7 +53,10 @@ func main() {
 	defer summaryLogger.Println("========== Done, program exiting. ==========")
 
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
+		_, err := fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
+		if err != nil {
+			log.Printf("Error writing usage: %v", err)
+		}
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -89,13 +92,36 @@ func main() {
 		log.Fatalf("Failed to search for .bank files: %v\n", err)
 	}
 
+	// If no bank files found in input directory, try Steam auto-detection
 	if len(bankFiles) == 0 {
-		log.Println("No sound banks found in input directory")
-		flag.Usage()
-		return
+		log.Println("No sound banks found in input directory, attempting Steam auto-detection...")
+
+		if runtime.GOOS != "windows" {
+			log.Println("Steam auto-detection is only supported on Windows")
+			flag.Usage()
+			return
+		}
+
+		steamBankFiles, err := getSteamBankFiles()
+		if err != nil {
+			log.Printf("Steam auto-detection failed: %v", err)
+			log.Println("Please manually place .bank files in the input directory")
+			flag.Usage()
+			return
+		}
+
+		if len(steamBankFiles) == 0 {
+			log.Println("No sound banks found in Steam installation")
+			flag.Usage()
+			return
+		}
+
+		bankFiles = steamBankFiles
+		log.Printf("Found %d sound bank(s) in Steam installation", len(bankFiles))
+	} else {
+		log.Printf("Found %d sound bank(s) in input directory", len(bankFiles))
 	}
 
-	log.Printf("Found %d sound bank(s) in input directory\n", len(bankFiles))
 	createDirectoryStructure(outputDir)
 
 	if _, err := os.Stat(vgmstreamPath); os.IsNotExist(err) {
@@ -188,11 +214,24 @@ func removeEmptyDirectories(outputDir string) {
 }
 
 func isDirEmpty(name string) (bool, error) {
-	f, err := os.Open(name)
+	// Validate the input path
+	cleanPath := filepath.Clean(name)
+	if !filepath.IsAbs(cleanPath) {
+		cleanPath = filepath.Join(outputDir, cleanPath)
+	}
+	if !strings.HasPrefix(cleanPath, outputDir) {
+		return false, fmt.Errorf("access denied: %s is outside the allowed directory", name)
+	}
+
+	f, err := os.Open(cleanPath)
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Printf("Error closing file: %v", err)
+		}
+	}()
 
 	_, err = f.Readdir(1)
 	if err == io.EOF {
@@ -321,8 +360,11 @@ func isValidBankFile(filePath string) bool {
 	baseDir := filepath.Clean(inputDir) // Assuming inputDir is the base directory
 
 	cleanPath := filepath.Clean(filePath)
-	// Ensure the filePath is within the baseDir
-	if !strings.HasPrefix(cleanPath, baseDir) {
+	// Allow files from Steam installation or within the base directory
+	steamPath, steamErr := findSteamGamePath()
+	isFromSteam := steamErr == nil && strings.HasPrefix(cleanPath, filepath.Clean(steamPath))
+
+	if !strings.HasPrefix(cleanPath, baseDir) && !isFromSteam {
 		fileLogger.Printf("Attempted access outside base directory: %s\n", filePath)
 		return false
 	}
@@ -332,7 +374,11 @@ func isValidBankFile(filePath string) bool {
 		fileLogger.Printf("Failed to open bank file %s: %v\n", cleanPath, err)
 		return false
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Printf("Error closing file: %v", err)
+		}
+	}()
 
 	// Read the first 4 bytes
 	header := make([]byte, 4)
